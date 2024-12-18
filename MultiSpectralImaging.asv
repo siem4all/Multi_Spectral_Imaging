@@ -151,11 +151,11 @@ classdef MultiSpectralImaging
                  %Check for the existence of the dark reference image
                 if exist('C:\\Users\\DELL\\Documents\\MATLAB\\res\\images\\b.png', 'file') ~= 2
                      error('Dark reference image (b.png) not found.');
-                end
+    end
 
-                % Read and convert the images to grayscale
-                white = rgb2gray(imread('C:\\Users\\DELL\\Documents\\MATLAB\\res\\images\\w.png'));
-                dark = rgb2gray(imread('C:\\Users\\DELL\\Documents\\MATLAB\\res\\images\\b.png'));
+% Read and convert the images to grayscale
+white = rgb2gray(imread('C:\\Users\\DELL\\Documents\\MATLAB\\res\\images\\w.png'));
+dark = rgb2gray(imread('C:\\Users\\DELL\\Documents\\MATLAB\\res\\images\\b.png'));
 
                 % Check for division by zero
                 if all(white(:) == dark(:))
