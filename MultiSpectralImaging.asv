@@ -15,31 +15,31 @@ classdef MultiSpectralImaging
         function obj = MultiSpectralImaging(wavelengths, total_bands, roi, x, y) 
             obj.wavelengths = wavelengths;
             obj.total_bands = total_bands;
-            obj.roi = roi;
-            obj.si_images = {};
-            obj.num_images = 0; % Initialize count to zero
-            obj.width=x;
-            obj.height=y;
+            obj.roi         = roi;
+            obj.si_images   = {};
+            obj.num_images  = 0; % Initialize count to zero
+            obj.width       =x;
+            obj.height      =y;
         end
         
-        function obj = runMultiSpectral(obj, imageDir, numImages, dir_ind, position)
+        function obj  = runMultiSpectral(obj, imageDir, numImages, dir_ind, position)
             % Initialize empty image for each band based on the roi value
             img_bands =cell(1, 4);
-            for index=1:4
+            for index = 1:4
                 img_bands{index}=zeros(obj.width/2, obj.height/2);
             end
             % Create a structure to hold dynamic variable names
-            data = struct();
+            data      = struct();
             % Ensure the directory is formatted correctly
-            imageDir = strrep(imageDir, '\', '\\');
+            imageDir  = strrep(imageDir, '\', '\\');
             % Get a list of all PNG files in the directory
-            imageFiles = dir(fullfile(imageDir, '*.png'));
+            imageFiles= dir(fullfile(imageDir, '*.png'));
             if isempty(imageFiles)
                 disp('No images found in the specified directory.');
                 return; % Exit the function early
             end
             % Initialize each field of data in a loop
-            fields = {'avg_refl', 'rf_std_error', 'avg_si_refl', 'si_std_error'};
+            fields    = {'avg_refl', 'rf_std_error', 'avg_si_refl', 'si_std_error'};
             for i = 1:length(fields)
                data.(fields{i}) = zeros(1, obj.total_bands);
             end
@@ -51,7 +51,7 @@ classdef MultiSpectralImaging
                 % Check if the file exists
                 if isfile(filename)
                     % Read the image and Smooth it using imbilatfilt
-                    img =imbilatfilt(imread(filename));
+                    img   =imbilatfilt(imread(filename));
                     
                     % Convert to grayscale if the image is RGB
                     if size(img, 3) == 3
@@ -119,24 +119,24 @@ classdef MultiSpectralImaging
             % Define the row and column indices for each band
            row_indices = [rows(1,1), rows(1,2); rows(1,1), rows(1,2); rows(2,1), rows(2,2); rows(2,1), rows(2,2)];
            col_indices = [cols(1,1), cols(1,2); cols(2,1), cols(2,2); cols(1,1), cols(1,2); cols(2,1), cols(2,2)];
-           new_img=img_db(row_indices(j, 1):row_indices(j, 2), col_indices(j, 1):col_indices(j, 2));
+           new_img        =img_db(row_indices(j, 1):row_indices(j, 2), col_indices(j, 1):col_indices(j, 2));
            if obj.roi==true
                % Extract the First ROI Positions
-                  x = position(:, 1);
-                  y = position(:, 2);
+                  x        = position(:, 1);
+                  y        = position(:, 2);
 
                   % Create a binary mask using roipoly
-                  mask = roipoly(new_img, x, y);
+                  mask      = roipoly(new_img, x, y);
 
                  %Find the bounding box of the ROI
                  [row, col] = find(mask); % Get the coordinates of the ROI in the mask
                  % Determine the bounding box
-                 xMin = min(col);
-                 xMax = max(col);
-                 yMin = min(row);
-                 yMax = max(row);
+                 xMin       = min(col);
+                 xMax       = max(col);
+                 yMin       = min(row);
+                 yMax       = max(row);
                  %Crop the image using the bounding box
-                 new_img = new_img(yMin:yMax, xMin:xMax, :);
+                 new_img    = new_img(yMin:yMax, xMin:xMax, :);
            end
         end
         
@@ -151,18 +151,18 @@ classdef MultiSpectralImaging
                  %Check for the existence of the dark reference image
                 if exist('C:\\Users\\DELL\\Documents\\MATLAB\\res\\images\\b.png', 'file') ~= 2
                      error('Dark reference image (b.png) not found.');
-    end
+                end
 
-% Read and convert the images to grayscale
-white = rgb2gray(imread('C:\\Users\\DELL\\Documents\\MATLAB\\res\\images\\w.png'));
-dark = rgb2gray(imread('C:\\Users\\DELL\\Documents\\MATLAB\\res\\images\\b.png'));
+                % Read and convert the images to grayscale
+                white = rgb2gray(imread('C:\\Users\\DELL\\Documents\\MATLAB\\res\\images\\w.png'));
+                dark  = rgb2gray(imread('C:\\Users\\DELL\\Documents\\MATLAB\\res\\images\\b.png'));
 
                 % Check for division by zero
                 if all(white(:) == dark(:))
                      error('White and dark reference images are identical. Normalization cannot be performed.');
                 end
-                cropped_dark=obj.crop_image(dark, j, position);
-                cropped_white=obj.crop_image(white, j, position);
+                cropped_dark  = obj.crop_image(dark, j, position);
+                cropped_white = obj.crop_image(white, j, position);
                 % Normalize the image
                 normalize_img = (img - cropped_dark) ./(cropped_white - cropped_dark);
                 normalize_img = max(0, min(1, normalize_img));  % Clipping to [0, 1]
@@ -185,9 +185,9 @@ dark = rgb2gray(imread('C:\\Users\\DELL\\Documents\\MATLAB\\res\\images\\b.png')
 
         function exportData(~, avg_refl, rf_std_error, avg_si_refl, si_std_error, dir_ind)
             % Create dynamic filenames using the provided directory index
-            avg_si = sprintf('Avg si %d', dir_ind);  % Filename for average si data
-            avg_Ref = sprintf('Avg reflection %d', dir_ind); % Filename for average reflection data
-            si_filename = strcat(avg_si, '.mat');      % Complete filename for si data
+            avg_si       = sprintf('Avg si %d', dir_ind);  % Filename for average si data
+            avg_Ref      = sprintf('Avg reflection %d', dir_ind); % Filename for average reflection data
+            si_filename  = strcat(avg_si, '.mat');      % Complete filename for si data
             avg_filename = strcat(avg_Ref, '.mat');          % Complete filename for reflection data
 
             % Check if the average reflection file exists and remove it if it does
