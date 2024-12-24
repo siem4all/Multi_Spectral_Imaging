@@ -10,18 +10,101 @@ classdef DataVisualize
             obj.ImageFolder = imageFolder;
             obj.ResultsPath = resultsPath;
         end
+        function graph_coloring(obj,i, si_images)
+            % Convert to grayscale if the image is RGB
+           if size(si_images{i}, 3) == 3
+               si_images{i} = rgb2gray(si_images{i});
+           end
+            % color maping
+            name       = "Ester";
+            if i>8
+                name   = "Siem";
+            end
+            folder_name="Before";
+            if i>4 && i<9 || i>12
+                folder_name="After";
+            end
+            band_num   = @(i) mod(i, 4) + (mod(i, 4) == 0) * 4; % Define the lambda expression
+            figure;
+            subplot(2,2,1);
+            imagesc(si_images{i}); % Display the data as an image
+            axis square; % Correct the axis orientation
+            colorbar; % Add a color bar for reference
+            % Step 2: Set color limits for the color map
+            clim([40, 90]); % Set color limits between 30 and 100
+            % Step 3: Customize the colormap
+            colormap(jet); % Change to the 'jet' colormap
+            % Add a title using sprintf
+            title(sprintf("%s %s Pressure of band %d", name, folder_name, band_num(i))); % Dynamic title   
+            xlabel('X'); % Label the X-axis
+            ylabel('Y'); % Label the Y-axis
+            hold on;
+            % Calculate mean and standard deviation
+            mu      = mean2(si_images{i});
+            sigma   = std2(si_images{i});
+            % Image Historgram
+            num_bins=256;
+            % Compute the normalized histogram
+            [counts, binLocations] = histcounts(si_images{i}, num_bins);
+
+            % Adjust bin centers for plotting
+            binCenters = binLocations(1:end-1) + 0.5; 
+            max_value  =max(counts);
+            % Create Gaussian distribution for the range of pixel intensities
+            x          = 0:255; % X values for the Gaussian curve
+            y          = (1/(sigma * sqrt(2 * pi))) * exp(-0.5 * ((x - mu) / sigma).^2);
+            y          = y * (max(counts) / max(y)); % Scale to histogram height
+            % Normalize the Gaussian curve to match the histogram scale
+            subplot(2,2,2);
+            bar(binCenters, counts, 'FaceColor', 'b');
+            % Add mean and std as text labels
+            text('String', sprintf('Mean = %.2f', mu), ...
+                 'Position', [mu+mu/10, max_value*0.9], ...
+                 'Color', 'r', 'FontSize', 8, 'FontWeight', 'bold');
+
+            text('String', sprintf('Std = %.2f', sigma), ...
+                 'Position', [mu+mu/10, max_value*0.8], ...
+                 'Color', 'r', 'FontSize', 8, 'FontWeight', 'bold');
+            title('Histogram with Mean and Std');
+            xlabel('Value');
+            ylabel('Count');
+            grid on; % Optional: Add grid for better readability 
+            hold on;
+            % Adjust bin centers for plotting
+            % Plot histogram and Gaussian curve
+            subplot(2,2,3);
+            bar(binCenters, counts, 'FaceColor', 'b'); % Normalized histogram
+            hold on;
+            plot(x, y, 'r', 'LineWidth', 2); % Gaussian curve
+            title('Normalized Histogram and Gaussian Distribution');
+            xlabel('Pixel Intensity');
+            ylabel('Scaled Y');
+            legend('Normalized Histogram', 'Gaussian Fit');
+            hold on;
+           
+            % Compute the second derivative of the histogram
+            subplot(2, 2, 4);
+            plot(binCenters, gradient(gradient(counts)), "Color",'b');
+            title('Second Derivative of Histogram');
+            xlabel('Pixel Intensity');
+            ylabel('Second Derivative');
+            %Save
+            saveas(gcf, fullfile(obj.ResultsPath, sprintf('%s_result_of_band_%d_%d.png', name, band_num(i),i)));
+            hold off;
+            % Save
+        end
         
         function makePlot(obj)
             % Define arrays for line widths, colors, and styles
-            lineWidths  = [1, 1.5, 2, 2.5];
-            lineColors  = {'blue', 'red', 'blue', 'red'};
-            lineStyles  = {'-', '--', ':', '-.'};
-            wavelengths = [735, 800, 865, 930]; 
-            names       = {'Ester', 'Siem'};
+            lineWidths      = [1, 1.5, 2, 2.5];
+            lineColors      = {'blue', 'red', 'blue', 'red'};
+            lineStyles      = {'-', '--', ':', '-.'};
+            wavelengths     = [735, 800, 865, 930]; 
+            names           = {'Ester', 'Siem'};
 
             % Initialize a figure 
             figure;
-            prefixes     = {'Avg reflection', 'Avg si'};
+            prefixes         = {'Avg reflection', 'Avg si'};
 
             for k = 1:length(prefixes)
                 % Create subplots
@@ -88,7 +171,7 @@ classdef DataVisualize
         
         function changeOfY(obj, roi)
             % This function calculates the percentage decrease of avg si before relative to after
-            results = {}; % Initialize a cell array to store results
+            results                     = {}; % Initialize a cell array to store results
             for i = 1:2:4 
                 name     = 'Ester';
                 if i > 2
@@ -96,12 +179,12 @@ classdef DataVisualize
                 end
                 
                 % Load the result of before pressure       
-                before              = load(sprintf('Avg si %d.mat', i));
+                before                  = load(sprintf('Avg si %d.mat', i));
                 % Load the result of after pressure
-                after               = load(sprintf('Avg si %d.mat', i + 1));
+                after                   = load(sprintf('Avg si %d.mat', i + 1));
                 % Store results in a cell array
-                results{end + 1, 1} = name; % Store the name
-                results{end, 2}     = string(roi); % Store the roi
+                results{end + 1, 1}     = name; % Store the name
+                results{end, 2}         = string(roi); % Store the roi
                 for j = 1:length(after.avg_si_refl)
                     % Calculate the difference and store it at index j
                     results{end, j + 2} = abs(after.avg_si_refl(j) - before.avg_si_refl(j)) / after.avg_si_refl(j) * 100;
@@ -109,10 +192,10 @@ classdef DataVisualize
             end 
             
             % Convert results to a table
-            resultsTable   = cell2table(results, 'VariableNames', {'Name', 'ROI', 'Band1', 'Band2', 'Band3', 'Band4'});
+            resultsTable                = cell2table(results, 'VariableNames', {'Name', 'ROI', 'Band1', 'Band2', 'Band3', 'Band4'});
             
             % Define the output file path
-            outputFilePath = fullfile(obj.ResultsPath, 'percentage_decrease_results.csv');
+            outputFilePath              = fullfile(obj.ResultsPath, 'percentage_decrease_results.csv');
             
             % Check if the file exists
             if isfile(outputFilePath)
@@ -126,7 +209,7 @@ classdef DataVisualize
         
         function [position, x, y] = regionOfInterest(obj, roi)
             % Get all image files from the specified folder
-            imageFiles = dir(fullfile(obj.ImageFolder, '*.png')); % Adjust file extension as needed
+            imageFiles        = dir(fullfile(obj.ImageFolder, '*.png')); % Adjust file extension as needed
 
             if isempty(imageFiles)
                 disp('No images found in the specified folder.');
